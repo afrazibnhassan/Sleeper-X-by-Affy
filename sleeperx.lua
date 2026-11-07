@@ -1,7 +1,7 @@
 --[[
 	SLEEPER X  |  Rivals
 	by Affy
-	RightShift = menu   K = aim toggle   R = rage toggle
+	RightShift = menu   K = aim toggle
 ]]
 
 if getgenv().SleeperX then
@@ -62,7 +62,7 @@ local DEFAULTS = {
 	WallCheck = true, SilentAim = false,
 	Trigger = false, TrigFOV = 14, TrigDelay = 0.05, TrigJitter = 0.02, TrigRate = 0.02,
 
-	Rage = false, RageKey = Enum.KeyCode.R,
+	Rage = false,
 	RageThroughWalls = true, RageFOV = 260,
 	RageAutoFire = true, RagePredict = 0.9,
 
@@ -609,7 +609,6 @@ end
 
 local BINDS = {
 	Aimbot = { key = Enum.KeyCode.K, mode = "Toggle" },
-	Rage   = { key = Enum.KeyCode.R, mode = "Toggle" },
 }
 local bindRenders = {}
 local pickerOpen = nil
@@ -896,7 +895,6 @@ toggle(pCombat, "Shoot Through Walls", "RageThroughWalls")
 slider(pCombat, "Rage FOV", "RageFOV", 20, 900, 0)
 slider(pCombat, "Rage Prediction", "RagePredict", 0, 2, 2)
 toggle(pCombat, "Rage Auto Fire", "RageAutoFire")
-bindRow(pCombat, "Rage bind", "Rage")
 label(pCombat, "Ignores wall check, snaps instantly, fires alone.")
 
 section(pCombat, "AIMBOT")
@@ -1827,7 +1825,6 @@ end)
 section(pCfg, "KEYS")
 label(pCfg, "RightShift — menu", DIM)
 label(pCfg, "K — aimbot", DIM)
-label(pCfg, "R — ragebot", DIM)
 
 button(pCfg, "Unload script", function()
 	if getgenv().SleeperX then getgenv().SleeperX.Unload() end
@@ -1852,7 +1849,7 @@ local running = true
 local renderConn = RunService.RenderStepped:Connect(function()
 	if not running then return end
 
-	local ok, err = pcall(function()
+	pcall(function()
 		local now = os.clock()
 		local dt = now - lastFrame
 		lastFrame = now
@@ -1878,7 +1875,7 @@ local renderConn = RunService.RenderStepped:Connect(function()
 			lastFog = wantFog
 		end
 
-		local rageOn = bindActive("Rage")
+		local rageOn = CFG.Rage
 		local aimOn = bindActive("Aimbot") or CFG.AimMode == "Always"
 		local trigOn = CFG.Trigger
 
@@ -1957,20 +1954,17 @@ local renderConn = RunService.RenderStepped:Connect(function()
 		local holdOK = (not CFG.RequireRMB)
 			or UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
 
-		local scanned = false
 		if rageOn then
 			resolveTarget(CFG.RageFOV, CFG.RageThroughWalls, CFG.RagePredict)
-			scanned = true
 		elseif (aimOn and holdOK) or trigOn then
 			local fov = 0
 			if aimOn and holdOK then fov = fovRadius() end
 			if trigOn and CFG.TrigFOV > fov then fov = CFG.TrigFOV end
 			resolveTarget(fov, false, CFG.Prediction)
-			scanned = true
 		end
 
 		if rageOn and TARGET.part then
-			aimAt(TARGET.pos, CFG.SilentAim and 1 or 1, "Linear")
+			aimAt(TARGET.pos, 1, "Linear")
 			if CFG.RageAutoFire and not firing and now >= nextShot then
 				fireOnce()
 				nextShot = now + CFG.TrigRate
@@ -1993,10 +1987,6 @@ local renderConn = RunService.RenderStepped:Connect(function()
 			firing = false
 		end
 	end)
-
-	if not ok and err then
-		-- keep the loop alive on transient errors
-	end
 end)
 conn(renderConn)
 
@@ -2010,7 +2000,7 @@ conn(RunService.Heartbeat:Connect(function(dt)
 		pcall(refreshEsp)
 	end
 
-	if CFG.ESP and CFG.TargetHL and not bindActive("Rage") and not bindActive("Aimbot") then
+	if CFG.ESP and CFG.TargetHL and not CFG.Rage and not bindActive("Aimbot") then
 		espScanAcc = espScanAcc + dt
 		if espScanAcc >= 0.2 then
 			espScanAcc = 0
@@ -2165,5 +2155,5 @@ task.spawn(function()
 	end
 end)
 
-print("[Sleeper X by Affy] Loaded. RightShift = menu | K = aim | R = rage")
+print("[Sleeper X by Affy] Loaded. RightShift = menu | K = aim")
 notify("Sleeper X loaded", ACCENT)
